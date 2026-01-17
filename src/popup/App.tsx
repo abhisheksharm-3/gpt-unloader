@@ -1,0 +1,81 @@
+import { useState } from 'react';
+import { browserAPI } from '../shared/browser-api';
+import { useSettings } from './hooks/useSettings';
+import { useStats } from './hooks/useStats';
+import { generateSummary } from '../lib/generate-summary';
+import { StatusToggle } from './components/StatusToggle';
+import { StatsPanel } from './components/StatsPanel';
+import { BufferSlider } from './components/BufferSlider';
+import { Footer } from './components/Footer';
+import { SummaryEditor } from './components/SummaryEditor';
+import { NewChatButton } from './components/NewChatButton';
+
+/**
+ * Main popup application component
+ */
+function App() {
+    const { isEnabled, bufferSize, handleToggle, handleBufferChange } = useSettings();
+    const { stats, isOnChatGPT } = useStats();
+    const [isShowingSummary, setIsShowingSummary] = useState(false);
+    const [summaryText, setSummaryText] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleNewChatWithSummary = async () => {
+        setIsLoading(true);
+        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0];
+        if (tab?.id) {
+            const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'getConversation' });
+            if (response?.conversation) {
+                const summary = generateSummary(response.conversation);
+                setSummaryText(summary);
+                setIsShowingSummary(true);
+            }
+        }
+        setIsLoading(false);
+    };
+
+    const handleStartNewChat = async () => {
+        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0];
+        if (tab?.id) {
+            await browserAPI.tabs.sendMessage(tab.id, { type: 'startNewChat', summary: summaryText });
+            setIsShowingSummary(false);
+            window.close();
+        }
+    };
+
+    if (isShowingSummary) {
+        return (
+            <SummaryEditor
+                summaryText={summaryText}
+                onSummaryChange={setSummaryText}
+                onCancel={() => setIsShowingSummary(false)}
+                onStartNewChat={handleStartNewChat}
+            />
+        );
+    }
+
+    const shouldShowNewChatButton = isOnChatGPT && stats.total > 5;
+
+    return (
+        <div className="w-80 bg-neutral-950 text-neutral-100 p-4 font-mono text-sm">
+            <div className="border-b border-neutral-800 pb-3 mb-4">
+                <h1 className="text-base font-semibold tracking-tight">GPT Unloader</h1>
+                <p className="text-neutral-500 text-xs mt-1">DOM virtualization for ChatGPT</p>
+            </div>
+
+            <StatusToggle isEnabled={isEnabled} onToggle={handleToggle} />
+            <StatsPanel stats={stats} isOnChatGPT={isOnChatGPT} />
+            <BufferSlider bufferSize={bufferSize} onBufferChange={handleBufferChange} />
+
+            {shouldShowNewChatButton && (
+                <NewChatButton isLoading={isLoading} onClick={handleNewChatWithSummary} />
+            )}
+
+            <Footer />
+        </div>
+    );
+}
+
+export default App;
