@@ -15,6 +15,12 @@ import { restoreAllMessages, getStats } from './lib/dom-virtualizer';
 import { extractConversation, startNewChatWithSummary } from './lib/conversation';
 import { showToast } from './lib/toast';
 import { injectStyles } from './lib/styles';
+import { getConversationStats } from './lib/statistics';
+import { exportConversation, downloadExport } from './lib/export';
+import { searchMessages, clearSearchHighlights } from './lib/search';
+import { detectTheme, watchTheme } from './lib/theme-detector';
+import { startNotificationWatcher } from './lib/notifications';
+import { getShortcuts } from './lib/shortcuts';
 import type { MessageType } from './types';
 
 let enabled = DEFAULT_SETTINGS.ENABLED;
@@ -28,6 +34,13 @@ function broadcastStats(): void {
 }
 
 /**
+ * Broadcasts theme to the popup
+ */
+function broadcastTheme(): void {
+    browserAPI.runtime.sendMessage({ type: 'theme', data: detectTheme() }).catch(() => { });
+}
+
+/**
  * Waits for ChatGPT messages to appear in the DOM
  */
 function waitForMessages(): void {
@@ -37,6 +50,7 @@ function waitForMessages(): void {
             setupObservers(bufferSize);
             setOnStatsChange(broadcastStats);
             scanMessages();
+            startNotificationWatcher();
             return true;
         }
         return false;
@@ -54,7 +68,7 @@ function waitForMessages(): void {
  * Handles keyboard shortcuts
  */
 function handleKeydown(e: KeyboardEvent): void {
-    if (e.altKey && e.key === 'u') {
+    if (e.altKey && e.key.toLowerCase() === 'u') {
         enabled = !enabled;
         setEnabled(enabled);
         browserAPI.storage.local.set({ enabled });
@@ -66,6 +80,17 @@ function handleKeydown(e: KeyboardEvent): void {
         showToast(enabled ? 'GPT Unloader: ON' : 'GPT Unloader: OFF');
         broadcastStats();
     }
+
+    if (e.altKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        const content = exportConversation('markdown');
+        downloadExport(content, 'markdown');
+        showToast('Conversation exported!');
+    }
+
+    if (e.key === 'Escape') {
+        clearSearchHighlights();
+    }
 }
 
 /**
@@ -76,13 +101,43 @@ function handleMessage(
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response: unknown) => void
 ): true | undefined {
-    if (message.type === 'getStats') {
-        sendResponse({ stats: getStats() });
-    } else if (message.type === 'getConversation') {
-        sendResponse({ conversation: extractConversation() });
-    } else if (message.type === 'startNewChat') {
-        startNewChatWithSummary(message.summary);
-        sendResponse({ success: true });
+    switch (message.type) {
+        case 'getStats':
+            sendResponse({ stats: getStats() });
+            break;
+        case 'getConversation':
+            sendResponse({ conversation: extractConversation() });
+            break;
+        case 'startNewChat':
+            startNewChatWithSummary(message.summary);
+            sendResponse({ success: true });
+            break;
+        case 'getConversationStats':
+            sendResponse({ stats: getConversationStats() });
+            break;
+        case 'exportConversation': {
+            const content = exportConversation(message.format);
+            downloadExport(content, message.format);
+            sendResponse({ success: true });
+            break;
+        }
+        case 'search': {
+            const results = searchMessages(message.query);
+            sendResponse({ results });
+            break;
+        }
+        case 'clearSearch':
+            clearSearchHighlights();
+            sendResponse({ success: true });
+            break;
+        case 'getTheme':
+            sendResponse({ theme: detectTheme() });
+            break;
+        case 'getShortcuts':
+            sendResponse({ shortcuts: getShortcuts() });
+            break;
+        default:
+            sendResponse({ error: 'Unknown message type' });
     }
     return true;
 }
@@ -118,6 +173,8 @@ async function init(): Promise<void> {
 
     injectStyles();
     waitForMessages();
+
+    watchTheme(broadcastTheme);
 
     browserAPI.storage.onChanged.addListener(handleStorageChange);
     browserAPI.runtime.onMessage.addListener(handleMessage);

@@ -29,4 +29,10 @@ export type ExtractedMessageType = {
 export type MessageType =
     | { type: 'getStats' }
     | { type: 'getConversation' }
-    | { type: 'startNewChat'; summary: string };
+    | { type: 'startNewChat'; summary: string }
+    | { type: 'getConversationStats' }
+    | { type: 'exportConversation'; format: 'markdown' | 'json' | 'text' }
+    | { type: 'search'; query: string }
+    | { type: 'clearSearch' }
+    | { type: 'getTheme' }
+    | { type: 'getShortcuts' };

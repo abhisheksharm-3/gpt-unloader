@@ -9,6 +9,10 @@ import { BufferSlider } from './components/BufferSlider';
 import { Footer } from './components/Footer';
 import { SummaryEditor } from './components/SummaryEditor';
 import { NewChatButton } from './components/NewChatButton';
+import { ExportPanel } from './components/ExportPanel';
+import { SearchBar } from './components/SearchBar';
+import { ConversationStats } from './components/ConversationStats';
+import { ShortcutsPanel } from './components/ShortcutsPanel';
 
 /**
  * Main popup application component
@@ -19,6 +23,7 @@ function App() {
     const [isShowingSummary, setIsShowingSummary] = useState(false);
     const [summaryText, setSummaryText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<'main' | 'tools'>('main');
 
     const handleNewChatWithSummary = async () => {
         setIsLoading(true);
@@ -65,12 +70,48 @@ function App() {
                 <p className="text-neutral-500 text-xs mt-1">DOM virtualization for ChatGPT</p>
             </div>
 
-            <StatusToggle isEnabled={isEnabled} onToggle={handleToggle} />
-            <StatsPanel stats={stats} isOnChatGPT={isOnChatGPT} />
-            <BufferSlider bufferSize={bufferSize} onBufferChange={handleBufferChange} />
+            {isOnChatGPT && (
+                <div className="flex gap-1 mb-4">
+                    <button
+                        onClick={() => setActiveTab('main')}
+                        className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'main'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                            }`}
+                    >
+                        Performance
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('tools')}
+                        className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'tools'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                            }`}
+                    >
+                        Tools
+                    </button>
+                </div>
+            )}
 
-            {shouldShowNewChatButton && (
-                <NewChatButton isLoading={isLoading} onClick={handleNewChatWithSummary} />
+            {activeTab === 'main' && (
+                <>
+                    <StatusToggle isEnabled={isEnabled} onToggle={handleToggle} />
+                    <StatsPanel stats={stats} isOnChatGPT={isOnChatGPT} />
+                    <BufferSlider bufferSize={bufferSize} onBufferChange={handleBufferChange} />
+
+                    {shouldShowNewChatButton && (
+                        <NewChatButton isLoading={isLoading} onClick={handleNewChatWithSummary} />
+                    )}
+                </>
+            )}
+
+            {activeTab === 'tools' && (
+                <>
+                    <SearchBar isOnChatGPT={isOnChatGPT} />
+                    <ExportPanel isOnChatGPT={isOnChatGPT} />
+                    <ConversationStats isOnChatGPT={isOnChatGPT} />
+                    <ShortcutsPanel isOnChatGPT={isOnChatGPT} />
+                </>
             )}
 
             <Footer />
