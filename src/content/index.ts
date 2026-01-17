@@ -7,11 +7,12 @@ import { browserAPI, safeSendMessage } from '../shared/browser-api';
 import {
     MESSAGE_SELECTOR,
     DEFAULT_SETTINGS,
+    DEFAULT_PREFERENCES,
     MESSAGES_CHECK_INTERVAL_MS,
     MESSAGES_CHECK_TIMEOUT_MS,
 } from '../shared/constants';
 import { setupObservers, rebuildObserver, scanMessages, setEnabled, setOnStatsChange } from './lib/observer-manager';
-import { restoreAllMessages, getStats } from './lib/dom-virtualizer';
+import { restoreAllMessages, getStats, getMemoryHistory } from './lib/dom-virtualizer';
 import { extractConversation, startNewChatWithSummary } from './lib/conversation';
 import { showToast } from './lib/toast';
 import { injectStyles } from './lib/styles';
@@ -21,10 +22,24 @@ import { searchMessages, clearSearchHighlights } from './lib/search';
 import { detectTheme, watchTheme } from './lib/theme-detector';
 import { startNotificationWatcher } from './lib/notifications';
 import { getShortcuts } from './lib/shortcuts';
-import type { MessageType } from '../shared/types';
+import { injectAllTimestamps, startTimestampUpdater, setTimestampsEnabled } from './lib/timestamps';
+import { initReadingProgress, setReadingProgressEnabled } from './lib/reading-progress';
+import { getBookmarks, toggleBookmark, scrollToMessage, injectBookmarkButtons } from './lib/bookmarks';
+import { insertTemplate } from './lib/templates';
+import type { MessageType, UserPreferencesType } from '../shared/types';
 
 let enabled = DEFAULT_SETTINGS.ENABLED;
 let bufferSize = DEFAULT_SETTINGS.BUFFER_SIZE;
+let preferences: UserPreferencesType = DEFAULT_PREFERENCES;
+
+/**
+ * Applies user preferences to toggle features
+ */
+function applyPreferences(newPrefs: UserPreferencesType): void {
+    preferences = newPrefs;
+    setTimestampsEnabled(preferences.showTimestamps);
+    setReadingProgressEnabled(preferences.showReadingProgress);
+}
 
 /**
  * Broadcasts stats to the popup
@@ -51,6 +66,17 @@ function waitForMessages(): void {
             setOnStatsChange(broadcastStats);
             scanMessages();
             startNotificationWatcher();
+
+            // Initialize new features based on preferences
+            if (preferences.showTimestamps) {
+                injectAllTimestamps();
+                startTimestampUpdater();
+            }
+            if (preferences.showReadingProgress) {
+                initReadingProgress();
+            }
+            injectBookmarkButtons();
+
             return true;
         }
         return false;
@@ -135,6 +161,27 @@ function handleMessage(
             break;
         case 'getShortcuts':
             sendResponse({ shortcuts: getShortcuts() });
+            break;
+        case 'getBookmarks':
+            getBookmarks().then((bookmarks) => sendResponse({ bookmarks }));
+            return true;
+        case 'toggleBookmark':
+            toggleBookmark(message.messageIndex).then((isBookmarked) => sendResponse({ isBookmarked }));
+            return true;
+        case 'scrollToMessage':
+            scrollToMessage(message.messageIndex);
+            sendResponse({ success: true });
+            break;
+        case 'insertTemplate':
+            insertTemplate(message.content);
+            sendResponse({ success: true });
+            break;
+        case 'getMemoryHistory':
+            sendResponse({ history: getMemoryHistory() });
+            break;
+        case 'preferencesChanged':
+            applyPreferences(message.preferences);
+            sendResponse({ success: true });
             break;
         default:
             sendResponse({ error: 'Unknown message type' });

@@ -73,6 +73,45 @@ export type ExtractedMessageType = {
     content: string;
 };
 
+/** User preferences for toggleable features */
+export type UserPreferencesType = {
+    showTimestamps: boolean;
+    showReadingProgress: boolean;
+    enableContextMenu: boolean;
+};
+
+/** Bookmark entry */
+export type BookmarkType = {
+    id: string;
+    conversationId: string;
+    messageIndex: number;
+    role: string;
+    preview: string;
+    createdAt: number;
+};
+
+/** Conversation template */
+export type TemplateType = {
+    id: string;
+    name: string;
+    content: string;
+    createdAt: number;
+};
+
+/** Tab info for multi-tab sync */
+export type ChatTabType = {
+    tabId: number;
+    title: string;
+    url: string;
+    messageCount: number;
+};
+
+/** Memory history data point */
+export type MemoryDataPointType = {
+    timestamp: number;
+    savedBytes: number;
+};
+
 /** Message types for popup-content script communication */
 export type MessageType =
     | { type: 'getStats' }
@@ -83,4 +122,11 @@ export type MessageType =
     | { type: 'search'; query: string }
     | { type: 'clearSearch' }
     | { type: 'getTheme' }
-    | { type: 'getShortcuts' };
+    | { type: 'getShortcuts' }
+    | { type: 'getBookmarks' }
+    | { type: 'toggleBookmark'; messageIndex: number }
+    | { type: 'scrollToMessage'; messageIndex: number }
+    | { type: 'insertTemplate'; content: string }
+    | { type: 'getMemoryHistory' }
+    | { type: 'preferencesChanged'; preferences: UserPreferencesType };
+

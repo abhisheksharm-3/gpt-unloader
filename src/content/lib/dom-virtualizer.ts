@@ -1,8 +1,10 @@
-import type { MessageStateType, StatsType } from '../../shared/types';
+import type { MessageStateType, StatsType, MemoryDataPointType } from '../../shared/types';
 import { getMessages } from './message-tracker';
 
-/** Saved bytes tracker */
+const MAX_HISTORY_POINTS = 20;
+
 let savedBytes = 0;
+let memoryHistory: MemoryDataPointType[] = [];
 
 /**
  * Gets the current saved bytes count
@@ -16,12 +18,58 @@ export function getSavedBytes(): number {
  */
 export function resetSavedBytes(): void {
     savedBytes = 0;
+    memoryHistory = [];
+}
+
+/**
+ * Records a memory data point
+ */
+function recordMemoryPoint(): void {
+    memoryHistory.push({
+        timestamp: Date.now(),
+        savedBytes,
+    });
+
+    if (memoryHistory.length > MAX_HISTORY_POINTS) {
+        memoryHistory.shift();
+    }
+}
+
+/**
+ * Gets memory usage history
+ */
+export function getMemoryHistory(): MemoryDataPointType[] {
+    return [...memoryHistory];
+}
+
+/**
+ * Defers image loading in an element
+ */
+function deferImages(element: HTMLElement): void {
+    element.querySelectorAll('img[src]').forEach((img) => {
+        const imgEl = img as HTMLImageElement;
+        if (imgEl.src && !imgEl.dataset.gptUnloaderSrc) {
+            imgEl.dataset.gptUnloaderSrc = imgEl.src;
+            imgEl.removeAttribute('src');
+        }
+    });
+}
+
+/**
+ * Restores deferred images in an element
+ */
+function restoreImages(element: HTMLElement): void {
+    element.querySelectorAll('img[data-gpt-unloader-src]').forEach((img) => {
+        const imgEl = img as HTMLImageElement;
+        if (imgEl.dataset.gptUnloaderSrc) {
+            imgEl.src = imgEl.dataset.gptUnloaderSrc;
+            delete imgEl.dataset.gptUnloaderSrc;
+        }
+    });
 }
 
 /**
  * Collapses a message element (removes DOM content, keeps placeholder)
- * @param element - The message element to collapse
- * @param state - The message state object
  */
 export function collapseMessage(element: HTMLElement, state: MessageStateType): void {
     if (state.isCollapsed) return;
@@ -29,6 +77,8 @@ export function collapseMessage(element: HTMLElement, state: MessageStateType): 
     state.originalHTML = element.innerHTML;
     state.originalHeight = element.offsetHeight;
     savedBytes += state.originalHTML.length * 2;
+
+    deferImages(element);
 
     const placeholder = document.createElement('div');
     placeholder.className = 'gpt-unloader-placeholder';
@@ -39,12 +89,11 @@ export function collapseMessage(element: HTMLElement, state: MessageStateType): 
     element.classList.add('gpt-unloader-collapsed');
 
     state.isCollapsed = true;
+    recordMemoryPoint();
 }
 
 /**
  * Restores a collapsed message element
- * @param element - The message element to restore
- * @param state - The message state object
  */
 export function restoreMessage(element: HTMLElement, state: MessageStateType): void {
     if (!state.isCollapsed || !state.originalHTML) return;
@@ -56,8 +105,11 @@ export function restoreMessage(element: HTMLElement, state: MessageStateType): v
     element.style.contain = '';
     element.classList.remove('gpt-unloader-collapsed');
 
+    restoreImages(element);
+
     state.isCollapsed = false;
     state.originalHTML = '';
+    recordMemoryPoint();
 }
 
 /**

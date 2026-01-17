@@ -13,9 +13,14 @@ import { ExportPanel } from './components/ExportPanel';
 import { SearchBar } from './components/SearchBar';
 import { ConversationStats } from './components/ConversationStats';
 import { ShortcutsPanel } from './components/ShortcutsPanel';
+import { MemoryChart } from './components/MemoryChart';
+import { BookmarksPanel } from './components/BookmarksPanel';
+import { TemplatesPanel } from './components/TemplatesPanel';
+import { TabsPanel } from './components/TabsPanel';
+import { SettingsPanel } from './components/SettingsPanel';
 import type { ConversationMessageType } from '../shared/types';
 
-type ActiveTabType = 'main' | 'tools';
+type ActiveTabType = 'main' | 'tools' | 'settings';
 
 /**
  * Main popup application component
@@ -66,38 +71,48 @@ function App() {
                 <p className="text-neutral-500 text-xs mt-1">DOM virtualization for ChatGPT</p>
             </div>
 
-            {isOnChatGPT && (
-                <div className="flex gap-1 mb-4">
-                    <button
-                        onClick={() => setActiveTab('main')}
-                        className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'main'
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                            }`}
-                    >
-                        Performance
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('tools')}
-                        className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'tools'
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                            }`}
-                    >
-                        Tools
-                    </button>
-                </div>
-            )}
+            <div className="flex gap-1 mb-4">
+                <button
+                    onClick={() => setActiveTab('main')}
+                    className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'main'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        }`}
+                >
+                    Performance
+                </button>
+                <button
+                    onClick={() => setActiveTab('tools')}
+                    className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'tools'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        }`}
+                >
+                    Tools
+                </button>
+                <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'settings'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        }`}
+                >
+                    Settings
+                </button>
+            </div>
 
             {activeTab === 'main' && (
                 <>
                     <StatusToggle isEnabled={isEnabled} onToggle={handleToggle} />
+                    <MemoryChart isOnChatGPT={isOnChatGPT} />
                     <StatsPanel stats={stats} isOnChatGPT={isOnChatGPT} />
                     <BufferSlider bufferSize={bufferSize} onBufferChange={handleBufferChange} />
 
                     {shouldShowNewChatButton && (
                         <NewChatButton isLoading={isLoading} onClick={handleNewChatWithSummary} />
                     )}
+
+                    <TabsPanel />
                 </>
             )}
 
@@ -106,8 +121,14 @@ function App() {
                     <SearchBar isOnChatGPT={isOnChatGPT} />
                     <ExportPanel isOnChatGPT={isOnChatGPT} />
                     <ConversationStats isOnChatGPT={isOnChatGPT} />
+                    <BookmarksPanel isOnChatGPT={isOnChatGPT} />
+                    <TemplatesPanel isOnChatGPT={isOnChatGPT} />
                     <ShortcutsPanel isOnChatGPT={isOnChatGPT} />
                 </>
+            )}
+
+            {activeTab === 'settings' && (
+                <SettingsPanel />
             )}
 
             <Footer />

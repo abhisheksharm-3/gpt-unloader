@@ -31,3 +31,19 @@ export const MESSAGES_CHECK_INTERVAL_MS = 500;
 
 /** Maximum time to wait for messages in milliseconds */
 export const MESSAGES_CHECK_TIMEOUT_MS = 30000;
+
+/** Default user preferences for toggleable features */
+export const DEFAULT_PREFERENCES = {
+    showTimestamps: true,
+    showReadingProgress: true,
+    enableContextMenu: true,
+};
+
+/** Model pricing per 1M tokens (input/output) */
+export const MODEL_PRICING = {
+    'gpt-4o': { input: 2.50, output: 10.00 },
+    'gpt-4o-mini': { input: 0.15, output: 0.60 },
+    'gpt-4-turbo': { input: 10.00, output: 30.00 },
+    'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+};
+

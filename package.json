@@ -1,13 +1,14 @@
 {
   "name": "gpt-unloader",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build:popup": "vite build",
     "build:content": "esbuild src/content/index.ts --bundle --outfile=dist/content.js --format=iife --target=es2020",
-    "build": "tsc -b && npm run build:popup && npm run build:content && npm run copy:assets",
+    "build:background": "esbuild src/background/index.ts --bundle --outfile=dist/background.js --format=esm --target=es2020",
+    "build": "tsc -b && npm run build:popup && npm run build:content && npm run build:background && npm run copy:assets",
     "copy:assets": "node scripts/copy-assets.js",
     "lint": "eslint .",
     "preview": "vite preview",

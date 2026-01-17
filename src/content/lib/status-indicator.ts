@@ -13,20 +13,29 @@ const STATUS_STYLES = `
         left: 20px;
         background: #171717;
         color: #10b981;
-        padding: 10px 16px;
-        font-family: monospace;
+        padding: 12px 16px;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 12px;
         z-index: 999999;
         border: 1px solid #10b981;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        max-width: 280px;
         transition: opacity 0.3s ease, transform 0.3s ease;
     }
     #${STATUS_ID}.hidden {
         opacity: 0;
         transform: translateY(10px);
         pointer-events: none;
+    }
+    #${STATUS_ID} .status-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+    #${STATUS_ID} .status-warning {
+        color: #a1a1aa;
+        font-size: 10px;
+        line-height: 1.3;
     }
     #${STATUS_ID} .spinner {
         width: 12px;
@@ -35,6 +44,7 @@ const STATUS_STYLES = `
         border-top-color: transparent;
         border-radius: 50%;
         animation: gpt-unloader-spin 0.8s linear infinite;
+        flex-shrink: 0;
     }
     @keyframes gpt-unloader-spin {
         to { transform: rotate(360deg); }
@@ -85,8 +95,13 @@ export function setStatus(state: StatusStateType, messageCount?: number): void {
     switch (state) {
         case 'optimizing':
             statusElement.innerHTML = `
-                <div class="spinner"></div>
-                <span>Optimizing${messageCount ? ` ${messageCount} messages` : ''}...</span>
+                <div class="status-header">
+                    <div class="spinner"></div>
+                    <span>Optimizing${messageCount ? ` ${messageCount} messages` : ''}...</span>
+                </div>
+                <div class="status-warning">
+                    Page may be briefly unresponsive. Please wait.
+                </div>
             `;
             statusElement.classList.remove('hidden');
             break;
