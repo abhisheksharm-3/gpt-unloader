@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "GPT Unloader",
     "description": "Fix ChatGPT performance issues with long chats by virtualizing the DOM",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "icons": {
         "16": "icons/icon16.png",
         "48": "icons/icon48.png",
