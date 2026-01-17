@@ -1,16 +1,10 @@
-import { useState, useEffect } from 'react';
 import { browserAPI } from '../../shared/browser-api';
 
 /**
  * Footer with version and links
  */
 export function Footer() {
-    const [version, setVersion] = useState('');
-
-    useEffect(() => {
-        const manifest = browserAPI.runtime.getManifest();
-        setVersion(manifest.version);
-    }, []);
+    const version = browserAPI.runtime.getManifest().version;
 
     return (
         <div className="pt-3 border-t border-neutral-800 flex justify-between items-center">
