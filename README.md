@@ -12,9 +12,6 @@
   <a href="https://github.com/abhisheksharm-3/gpt-unloader/releases">
     <img src="https://img.shields.io/github/v/release/abhisheksharm-3/gpt-unloader?style=flat-square" alt="Release">
   </a>
-  <a href="https://github.com/abhisheksharm-3/gpt-unloader/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/abhisheksharm-3/gpt-unloader?style=flat-square" alt="License">
-  </a>
 </p>
 
 ---
@@ -185,12 +182,6 @@ gpt-unloader/
 - ✅ Edge
 - ✅ Brave
 - ✅ Opera
-
----
-
-## 📄 License
-
-MIT © [Abhishek Sharma](https://github.com/abhisheksharm-3)
 
 ---
 
