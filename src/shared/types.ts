@@ -66,3 +66,21 @@ export type ShortcutType = {
     action: string;
     description: string;
 };
+
+/** Extracted conversation message (for export/analysis) */
+export type ExtractedMessageType = {
+    role: string;
+    content: string;
+};
+
+/** Message types for popup-content script communication */
+export type MessageType =
+    | { type: 'getStats' }
+    | { type: 'getConversation' }
+    | { type: 'startNewChat'; summary: string }
+    | { type: 'getConversationStats' }
+    | { type: 'exportConversation'; format: ExportFormatType }
+    | { type: 'search'; query: string }
+    | { type: 'clearSearch' }
+    | { type: 'getTheme' }
+    | { type: 'getShortcuts' };

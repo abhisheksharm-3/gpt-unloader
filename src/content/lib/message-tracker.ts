@@ -1,4 +1,4 @@
-import type { MessageStateType } from '../types';
+import type { MessageStateType } from '../../shared/types';
 
 /** Tracked messages map */
 const messages = new Map<HTMLElement, MessageStateType>();

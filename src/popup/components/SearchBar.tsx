@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { browserAPI } from '../../shared/browser-api';
+import { useActiveTab } from '../hooks/useActiveTab';
 import type { SearchResultType } from '../../shared/types';
 
-type SearchBarProps = {
+type SearchBarPropsType = {
     isOnChatGPT: boolean;
 };
 
 /**
  * Search bar component with results display
  */
-export function SearchBar({ isOnChatGPT }: SearchBarProps) {
+export function SearchBar({ isOnChatGPT }: SearchBarPropsType) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResultType[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const { sendMessage } = useActiveTab();
 
     const handleSearch = async () => {
         if (!query.trim()) {
@@ -21,24 +22,15 @@ export function SearchBar({ isOnChatGPT }: SearchBarProps) {
         }
 
         setIsSearching(true);
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-
-        if (tab?.id) {
-            const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'search', query });
-            setResults(response?.results ?? []);
-        }
+        const response = await sendMessage<{ results: SearchResultType[] }>({ type: 'search', query });
+        setResults(response?.results ?? []);
         setIsSearching(false);
     };
 
     const handleClear = async () => {
         setQuery('');
         setResults([]);
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (tab?.id) {
-            await browserAPI.tabs.sendMessage(tab.id, { type: 'clearSearch' });
-        }
+        await sendMessage({ type: 'clearSearch' });
     };
 
     if (!isOnChatGPT) return null;

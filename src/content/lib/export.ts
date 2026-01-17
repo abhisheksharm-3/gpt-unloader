@@ -1,32 +1,5 @@
-import { MESSAGE_SELECTOR } from '../../shared/constants';
-import { getMessageState } from './message-tracker';
+import { extractAllMessages } from './message-extractor';
 import type { ExportFormatType } from '../../shared/types';
-
-/**
- * Extracts all messages for export
- */
-function extractAllMessages(): Array<{ role: string; content: string }> {
-    const messages: Array<{ role: string; content: string }> = [];
-    const msgElements = document.querySelectorAll(MESSAGE_SELECTOR);
-
-    msgElements.forEach((msg) => {
-        const role = msg.getAttribute('data-message-author-role') ?? 'unknown';
-        const state = getMessageState(msg as HTMLElement);
-
-        let content = '';
-        if (state?.isCollapsed && state.originalHTML) {
-            const temp = document.createElement('div');
-            temp.innerHTML = state.originalHTML;
-            content = temp.textContent ?? '';
-        } else {
-            content = msg.textContent ?? '';
-        }
-
-        messages.push({ role, content: content.trim() });
-    });
-
-    return messages;
-}
 
 /**
  * Exports conversation as Markdown

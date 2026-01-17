@@ -1,5 +1,6 @@
 import { MESSAGE_SELECTOR } from '../../shared/constants';
 import { getMessageState } from './message-tracker';
+import { extractMessageContent } from './message-extractor';
 import type { SearchResultType } from '../../shared/types';
 
 const HIGHLIGHT_CLASS = 'gpt-unloader-highlight';
@@ -65,15 +66,7 @@ export function searchMessages(query: string): SearchResultType[] {
         const element = msg as HTMLElement;
         const role = msg.getAttribute('data-message-author-role') ?? 'unknown';
         const state = getMessageState(element);
-
-        let content = '';
-        if (state?.isCollapsed && state.originalHTML) {
-            const temp = document.createElement('div');
-            temp.innerHTML = state.originalHTML;
-            content = temp.textContent ?? '';
-        } else {
-            content = msg.textContent ?? '';
-        }
+        const content = extractMessageContent(element, state);
 
         const lowerContent = content.toLowerCase();
         const lowerQuery = query.toLowerCase();

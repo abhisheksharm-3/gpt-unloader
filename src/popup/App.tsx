@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { browserAPI } from '../shared/browser-api';
 import { useSettings } from './hooks/useSettings';
 import { useStats } from './hooks/useStats';
+import { useActiveTab } from './hooks/useActiveTab';
 import { generateSummary } from '../lib/generate-summary';
 import { StatusToggle } from './components/StatusToggle';
 import { StatsPanel } from './components/StatsPanel';
@@ -13,6 +13,9 @@ import { ExportPanel } from './components/ExportPanel';
 import { SearchBar } from './components/SearchBar';
 import { ConversationStats } from './components/ConversationStats';
 import { ShortcutsPanel } from './components/ShortcutsPanel';
+import type { ConversationMessageType } from '../shared/types';
+
+type ActiveTabType = 'main' | 'tools';
 
 /**
  * Main popup application component
@@ -20,34 +23,27 @@ import { ShortcutsPanel } from './components/ShortcutsPanel';
 function App() {
     const { isEnabled, bufferSize, handleToggle, handleBufferChange } = useSettings();
     const { stats, isOnChatGPT } = useStats();
+    const { sendMessage } = useActiveTab();
     const [isShowingSummary, setIsShowingSummary] = useState(false);
     const [summaryText, setSummaryText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'main' | 'tools'>('main');
+    const [activeTab, setActiveTab] = useState<ActiveTabType>('main');
 
     const handleNewChatWithSummary = async () => {
         setIsLoading(true);
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (tab?.id) {
-            const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'getConversation' });
-            if (response?.conversation) {
-                const summary = generateSummary(response.conversation);
-                setSummaryText(summary);
-                setIsShowingSummary(true);
-            }
+        const response = await sendMessage<{ conversation: ConversationMessageType[] }>({ type: 'getConversation' });
+        if (response?.conversation) {
+            const summary = generateSummary(response.conversation);
+            setSummaryText(summary);
+            setIsShowingSummary(true);
         }
         setIsLoading(false);
     };
 
     const handleStartNewChat = async () => {
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (tab?.id) {
-            await browserAPI.tabs.sendMessage(tab.id, { type: 'startNewChat', summary: summaryText });
-            setIsShowingSummary(false);
-            window.close();
-        }
+        await sendMessage({ type: 'startNewChat', summary: summaryText });
+        setIsShowingSummary(false);
+        window.close();
     };
 
     if (isShowingSummary) {
@@ -75,8 +71,8 @@ function App() {
                     <button
                         onClick={() => setActiveTab('main')}
                         className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'main'
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                             }`}
                     >
                         Performance
@@ -84,8 +80,8 @@ function App() {
                     <button
                         onClick={() => setActiveTab('tools')}
                         className={`flex-1 py-1.5 text-xs transition-colors ${activeTab === 'tools'
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                             }`}
                     >
                         Tools

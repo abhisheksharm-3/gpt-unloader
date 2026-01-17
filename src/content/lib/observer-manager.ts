@@ -1,11 +1,16 @@
 import { MESSAGE_SELECTOR, CONTAINER_SELECTORS, ROOT_MARGIN_MULTIPLIER } from '../../shared/constants';
 import { trackMessage, isTracked, getMessages, getMessageState } from './message-tracker';
 import { collapseMessage, restoreMessage } from './dom-virtualizer';
+import { setStatus } from './status-indicator';
+
+const CHUNK_SIZE = 20;
+const CHUNK_DELAY_MS = 0;
 
 let intersectionObserver: IntersectionObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
 let currentEnabled = true;
 let onStatsChange: (() => void) | null = null;
+let isProcessing = false;
 
 /**
  * Sets the stats change callback
@@ -42,6 +47,44 @@ function createIntersectionCallback(): IntersectionObserverCallback {
 function createIntersectionObserver(bufferSize: number): IntersectionObserver {
     const rootMargin = `${bufferSize * ROOT_MARGIN_MULTIPLIER}px 0px`;
     return new IntersectionObserver(createIntersectionCallback(), { rootMargin, threshold: 0 });
+}
+
+/**
+ * Processes a batch of messages without blocking the main thread
+ */
+function processMessageBatch(
+    elements: HTMLElement[],
+    startIndex: number,
+    onProgress: (processed: number, total: number) => void,
+    onComplete: () => void
+): void {
+    const endIndex = Math.min(startIndex + CHUNK_SIZE, elements.length);
+
+    for (let i = startIndex; i < endIndex; i++) {
+        const element = elements[i];
+        if (!isTracked(element)) {
+            trackMessage(element);
+            if (currentEnabled && intersectionObserver) {
+                intersectionObserver.observe(element);
+            }
+        }
+    }
+
+    onProgress(endIndex, elements.length);
+
+    if (endIndex < elements.length) {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+                processMessageBatch(elements, endIndex, onProgress, onComplete);
+            }, { timeout: 50 });
+        } else {
+            setTimeout(() => {
+                processMessageBatch(elements, endIndex, onProgress, onComplete);
+            }, CHUNK_DELAY_MS);
+        }
+    } else {
+        onComplete();
+    }
 }
 
 /**
@@ -113,20 +156,36 @@ export function rebuildObserver(bufferSize: number): void {
 }
 
 /**
- * Scans for existing messages and starts tracking them
+ * Scans for existing messages and starts tracking them (chunked, non-blocking)
  */
 export function scanMessages(): void {
+    if (isProcessing) return;
+
     const msgs = document.querySelectorAll(MESSAGE_SELECTOR);
-    msgs.forEach((msg) => {
-        const element = msg as HTMLElement;
-        if (!isTracked(element)) {
-            trackMessage(element);
-            if (currentEnabled && intersectionObserver) {
-                intersectionObserver.observe(element);
+    const elements = Array.from(msgs) as HTMLElement[];
+
+    if (elements.length === 0) {
+        onStatsChange?.();
+        return;
+    }
+
+    isProcessing = true;
+    setStatus('optimizing', elements.length);
+
+    processMessageBatch(
+        elements,
+        0,
+        (processed, total) => {
+            if (processed % 50 === 0 || processed === total) {
+                setStatus('optimizing', total - processed);
             }
+        },
+        () => {
+            isProcessing = false;
+            setStatus('ready');
+            onStatsChange?.();
         }
-    });
-    onStatsChange?.();
+    );
 }
 
 /**

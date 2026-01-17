@@ -1,5 +1,6 @@
 import { MESSAGE_SELECTOR } from '../../shared/constants';
 import { getMessageState } from './message-tracker';
+import { extractMessageContent } from './message-extractor';
 import type { ConversationStatsType } from '../../shared/types';
 
 /**
@@ -29,17 +30,10 @@ export function getConversationStats(): ConversationStatsType {
     let totalText = '';
 
     messages.forEach((msg) => {
+        const element = msg as HTMLElement;
         const role = msg.getAttribute('data-message-author-role');
-        const state = getMessageState(msg as HTMLElement);
-
-        let content = '';
-        if (state?.isCollapsed && state.originalHTML) {
-            const temp = document.createElement('div');
-            temp.innerHTML = state.originalHTML;
-            content = temp.textContent ?? '';
-        } else {
-            content = msg.textContent ?? '';
-        }
+        const state = getMessageState(element);
+        const content = extractMessageContent(element, state);
 
         totalText += content + ' ';
         const words = countWords(content);

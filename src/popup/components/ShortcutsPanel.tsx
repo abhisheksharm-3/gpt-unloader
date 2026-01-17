@@ -1,34 +1,28 @@
 import { useState, useEffect } from 'react';
-import { browserAPI } from '../../shared/browser-api';
+import { useActiveTab } from '../hooks/useActiveTab';
 import type { ShortcutType } from '../../shared/types';
 
-type ShortcutsPanelProps = {
+type ShortcutsPanelPropsType = {
     isOnChatGPT: boolean;
 };
 
 /**
  * Keyboard shortcuts panel component
  */
-export function ShortcutsPanel({ isOnChatGPT }: ShortcutsPanelProps) {
+export function ShortcutsPanel({ isOnChatGPT }: ShortcutsPanelPropsType) {
     const [shortcuts, setShortcuts] = useState<ShortcutType[]>([]);
     const [isExpanded, setIsExpanded] = useState(false);
+    const { sendMessage } = useActiveTab();
 
     useEffect(() => {
         if (!isOnChatGPT) return;
 
-        const fetchShortcuts = async () => {
-            const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-            const tab = tabs[0];
-            if (tab?.id) {
-                const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'getShortcuts' });
-                if (response?.shortcuts) {
-                    setShortcuts(response.shortcuts);
-                }
+        sendMessage<{ shortcuts: ShortcutType[] }>({ type: 'getShortcuts' }).then((response) => {
+            if (response?.shortcuts) {
+                setShortcuts(response.shortcuts);
             }
-        };
-
-        fetchShortcuts();
-    }, [isOnChatGPT]);
+        });
+    }, [isOnChatGPT, sendMessage]);
 
     if (!isOnChatGPT) return null;
 

@@ -1,4 +1,4 @@
-import type { MessageStateType, ContentStatsType } from '../types';
+import type { MessageStateType, StatsType } from '../../shared/types';
 import { getMessages } from './message-tracker';
 
 /** Saved bytes tracker */
@@ -75,7 +75,7 @@ export function restoreAllMessages(): void {
 /**
  * Gets current statistics
  */
-export function getStats(): ContentStatsType {
+export function getStats(): StatsType {
     const messages = getMessages();
     let active = 0;
     let collapsed = 0;

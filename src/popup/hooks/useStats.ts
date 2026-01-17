@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { browserAPI } from '../../shared/browser-api';
 import type { StatsType } from '../../shared/types';
+import { useActiveTab } from './useActiveTab';
 
 const INITIAL_STATS: StatsType = {
     total: 0,
@@ -15,19 +16,7 @@ const INITIAL_STATS: StatsType = {
  */
 export function useStats() {
     const [stats, setStats] = useState<StatsType>(INITIAL_STATS);
-    const [isOnChatGPT, setIsOnChatGPT] = useState(false);
-
-    const fetchStats = useCallback(async () => {
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (tab?.id && (tab.url?.includes('chatgpt.com') || tab.url?.includes('chat.openai.com'))) {
-            setIsOnChatGPT(true);
-            const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'getStats' });
-            if (response?.stats) {
-                setStats(response.stats);
-            }
-        }
-    }, []);
+    const { tabId, isOnChatGPT, sendMessage } = useActiveTab();
 
     useEffect(() => {
         const handleMessage = (message: { type: string; data: StatsType }) => {
@@ -38,23 +27,18 @@ export function useStats() {
 
         browserAPI.runtime.onMessage.addListener(handleMessage);
 
-        // Fetch initial stats on mount
-        browserAPI.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-            const tab = tabs[0];
-            if (tab?.id && (tab.url?.includes('chatgpt.com') || tab.url?.includes('chat.openai.com'))) {
-                setIsOnChatGPT(true);
-                browserAPI.tabs.sendMessage(tab.id, { type: 'getStats' }).then((response) => {
-                    if (response?.stats) {
-                        setStats(response.stats);
-                    }
-                });
-            }
-        });
+        if (tabId && isOnChatGPT) {
+            sendMessage<{ stats: StatsType }>({ type: 'getStats' }).then((response) => {
+                if (response?.stats) {
+                    setStats(response.stats);
+                }
+            });
+        }
 
         return () => {
             browserAPI.runtime.onMessage.removeListener(handleMessage);
         };
-    }, []);
+    }, [tabId, isOnChatGPT, sendMessage]);
 
-    return { stats, isOnChatGPT, fetchStats };
+    return { stats, isOnChatGPT };
 }

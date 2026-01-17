@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { browserAPI } from '../../shared/browser-api';
+import { useActiveTab } from '../hooks/useActiveTab';
 import type { ConversationStatsType } from '../../shared/types';
 
-type ConversationStatsProps = {
+type ConversationStatsPropsType = {
     isOnChatGPT: boolean;
 };
 
@@ -20,26 +20,20 @@ const INITIAL_STATS: ConversationStatsType = {
 /**
  * Conversation statistics display component
  */
-export function ConversationStats({ isOnChatGPT }: ConversationStatsProps) {
+export function ConversationStats({ isOnChatGPT }: ConversationStatsPropsType) {
     const [stats, setStats] = useState<ConversationStatsType>(INITIAL_STATS);
     const [isExpanded, setIsExpanded] = useState(false);
+    const { sendMessage } = useActiveTab();
 
     useEffect(() => {
         if (!isOnChatGPT) return;
 
-        const fetchStats = async () => {
-            const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-            const tab = tabs[0];
-            if (tab?.id) {
-                const response = await browserAPI.tabs.sendMessage(tab.id, { type: 'getConversationStats' });
-                if (response?.stats) {
-                    setStats(response.stats);
-                }
+        sendMessage<{ stats: ConversationStatsType }>({ type: 'getConversationStats' }).then((response) => {
+            if (response?.stats) {
+                setStats(response.stats);
             }
-        };
-
-        fetchStats();
-    }, [isOnChatGPT]);
+        });
+    }, [isOnChatGPT, sendMessage]);
 
     if (!isOnChatGPT) return null;
 

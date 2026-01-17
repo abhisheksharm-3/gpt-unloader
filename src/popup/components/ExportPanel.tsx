@@ -1,20 +1,18 @@
-import { browserAPI } from '../../shared/browser-api';
+import { useActiveTab } from '../hooks/useActiveTab';
 import type { ExportFormatType } from '../../shared/types';
 
-type ExportPanelProps = {
+type ExportPanelPropsType = {
     isOnChatGPT: boolean;
 };
 
 /**
  * Export panel with buttons for different export formats
  */
-export function ExportPanel({ isOnChatGPT }: ExportPanelProps) {
+export function ExportPanel({ isOnChatGPT }: ExportPanelPropsType) {
+    const { sendMessage } = useActiveTab();
+
     const handleExport = async (format: ExportFormatType) => {
-        const tabs = await browserAPI.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (tab?.id) {
-            await browserAPI.tabs.sendMessage(tab.id, { type: 'exportConversation', format });
-        }
+        await sendMessage({ type: 'exportConversation', format });
     };
 
     if (!isOnChatGPT) return null;

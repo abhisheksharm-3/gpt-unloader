@@ -3,7 +3,7 @@
  * Implements DOM virtualization for ChatGPT to improve performance with long chats
  */
 
-import { browserAPI } from '../shared/browser-api';
+import { browserAPI, safeSendMessage } from '../shared/browser-api';
 import {
     MESSAGE_SELECTOR,
     DEFAULT_SETTINGS,
@@ -21,7 +21,7 @@ import { searchMessages, clearSearchHighlights } from './lib/search';
 import { detectTheme, watchTheme } from './lib/theme-detector';
 import { startNotificationWatcher } from './lib/notifications';
 import { getShortcuts } from './lib/shortcuts';
-import type { MessageType } from './types';
+import type { MessageType } from '../shared/types';
 
 let enabled = DEFAULT_SETTINGS.ENABLED;
 let bufferSize = DEFAULT_SETTINGS.BUFFER_SIZE;
@@ -30,14 +30,14 @@ let bufferSize = DEFAULT_SETTINGS.BUFFER_SIZE;
  * Broadcasts stats to the popup
  */
 function broadcastStats(): void {
-    browserAPI.runtime.sendMessage({ type: 'stats', data: getStats() }).catch(() => { });
+    safeSendMessage({ type: 'stats', data: getStats() });
 }
 
 /**
  * Broadcasts theme to the popup
  */
 function broadcastTheme(): void {
-    browserAPI.runtime.sendMessage({ type: 'theme', data: detectTheme() }).catch(() => { });
+    safeSendMessage({ type: 'theme', data: detectTheme() });
 }
 
 /**
