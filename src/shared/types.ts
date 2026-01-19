@@ -24,6 +24,7 @@ export type MessageStateType = {
     originalHTML: string;
     originalHeight: number;
     isCollapsed: boolean;
+    isCompressed?: boolean; // Whether originalHTML is LZ-String compressed
 };
 
 /** Extension settings stored in browser.storage */

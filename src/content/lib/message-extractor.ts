@@ -1,6 +1,17 @@
 import { MESSAGE_SELECTOR } from '../../shared/constants';
 import { getMessageState } from './message-tracker';
 import type { ExtractedMessageType, MessageStateType } from '../../shared/types';
+import LZString from 'lz-string';
+
+/**
+ * Decompresses HTML if it's compressed
+ */
+function decompressIfNeeded(html: string, isCompressed: boolean | undefined): string {
+    if (isCompressed) {
+        return LZString.decompressFromUTF16(html) || '';
+    }
+    return html;
+}
 
 /**
  * Extracts text content from a message element, handling collapsed state
@@ -10,7 +21,7 @@ import type { ExtractedMessageType, MessageStateType } from '../../shared/types'
 export function extractMessageContent(element: HTMLElement, state: MessageStateType | undefined): string {
     if (state?.isCollapsed && state.originalHTML) {
         const temp = document.createElement('div');
-        temp.innerHTML = state.originalHTML;
+        temp.innerHTML = decompressIfNeeded(state.originalHTML, state.isCompressed);
         return temp.textContent ?? '';
     }
     return element.textContent ?? '';

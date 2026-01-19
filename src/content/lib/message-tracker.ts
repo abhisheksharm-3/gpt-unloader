@@ -20,6 +20,7 @@ export function trackMessage(element: HTMLElement): void {
         originalHTML: '',
         originalHeight: 0,
         isCollapsed: false,
+        isCompressed: false,
     };
     messages.set(element, state);
 }
