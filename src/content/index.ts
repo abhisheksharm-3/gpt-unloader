@@ -201,6 +201,21 @@ function handleMessage(
             applyPreferences(message.preferences);
             sendResponse({ success: true });
             break;
+        case 'forceOptimize':
+            scanMessages();
+            sendResponse({ success: true });
+            break;
+        case 'showSearchPrompt':
+            showToast('Press Alt+F to search');
+            sendResponse({ success: true });
+            break;
+        case 'reinitialize':
+            teardownObservers();
+            clearMessages();
+            resetSavedBytes();
+            waitForMessages();
+            sendResponse({ success: true });
+            break;
         default:
             sendResponse({ error: 'Unknown message type' });
     }
