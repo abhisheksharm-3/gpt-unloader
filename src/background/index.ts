@@ -114,10 +114,15 @@ browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     if (message.type === 'updateTabStats' && sender.tab?.id) {
-        const existing = tabRegistry.get(sender.tab.id);
+        const tabId = sender.tab.id;
+        const collapsed = (message.messageCount as number) ?? 0;
+        const existing = tabRegistry.get(tabId);
         if (existing) {
-            existing.messageCount = message.messageCount ?? 0;
+            existing.messageCount = collapsed;
         }
+        const badgeText = collapsed > 0 ? String(collapsed) : '';
+        browserAPI.action.setBadgeText({ text: badgeText, tabId });
+        browserAPI.action.setBadgeBackgroundColor({ color: '#10b981', tabId });
         return true;
     }
 

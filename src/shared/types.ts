@@ -127,5 +127,8 @@ export type MessageType =
     | { type: 'scrollToMessage'; messageIndex: number }
     | { type: 'insertTemplate'; content: string }
     | { type: 'getMemoryHistory' }
-    | { type: 'preferencesChanged'; preferences: UserPreferencesType };
+    | { type: 'preferencesChanged'; preferences: UserPreferencesType }
+    | { type: 'forceOptimize' }
+    | { type: 'showSearchPrompt' }
+    | { type: 'reinitialize' };
 

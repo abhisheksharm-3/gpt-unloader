@@ -47,7 +47,9 @@ function applyPreferences(newPrefs: UserPreferencesType): void {
  * Broadcasts stats to the popup
  */
 function broadcastStats(): void {
-    safeSendMessage({ type: 'stats', data: getStats() });
+    const stats = getStats();
+    safeSendMessage({ type: 'stats', data: stats });
+    browserAPI.runtime.sendMessage({ type: 'updateTabStats', messageCount: stats.collapsed }).catch(() => {});
 }
 
 /**
