@@ -11,8 +11,10 @@ import {
     MESSAGES_CHECK_INTERVAL_MS,
     MESSAGES_CHECK_TIMEOUT_MS,
 } from '../shared/constants';
-import { setupObservers, rebuildObserver, scanMessages, setEnabled, setOnStatsChange } from './lib/observer-manager';
-import { restoreAllMessages, getStats, getMemoryHistory } from './lib/dom-virtualizer';
+import { setupObservers, rebuildObserver, scanMessages, setEnabled, setOnStatsChange, teardownObservers } from './lib/observer-manager';
+import { restoreAllMessages, getStats, getMemoryHistory, resetSavedBytes } from './lib/dom-virtualizer';
+import { clearMessages } from './lib/message-tracker';
+import { watchNavigation } from './lib/navigation-observer';
 import { extractConversation, startNewChatWithSummary } from './lib/conversation';
 import { showToast } from './lib/toast';
 import { injectStyles } from './lib/styles';
@@ -22,8 +24,8 @@ import { searchMessages, clearSearchHighlights } from './lib/search';
 import { detectTheme, watchTheme } from './lib/theme-detector';
 import { startNotificationWatcher } from './lib/notifications';
 import { getShortcuts } from './lib/shortcuts';
-import { injectAllTimestamps, startTimestampUpdater, setTimestampsEnabled } from './lib/timestamps';
-import { initReadingProgress, setReadingProgressEnabled } from './lib/reading-progress';
+import { injectAllTimestamps, startTimestampUpdater, stopTimestampUpdater, removeAllTimestamps, setTimestampsEnabled } from './lib/timestamps';
+import { initReadingProgress, cleanupReadingProgress, setReadingProgressEnabled } from './lib/reading-progress';
 import { getBookmarks, toggleBookmark, scrollToMessage, injectBookmarkButtons } from './lib/bookmarks';
 import { insertTemplate } from './lib/templates';
 import type { MessageType, UserPreferencesType } from '../shared/types';
@@ -53,6 +55,20 @@ function broadcastStats(): void {
  */
 function broadcastTheme(): void {
     safeSendMessage({ type: 'theme', data: detectTheme() });
+}
+
+/**
+ * Tears down all extension state and re-initializes for the new conversation.
+ */
+function handleNavigation(): void {
+    restoreAllMessages();
+    teardownObservers();
+    clearMessages();
+    resetSavedBytes();
+    stopTimestampUpdater();
+    removeAllTimestamps();
+    cleanupReadingProgress();
+    waitForMessages();
 }
 
 /**
@@ -222,6 +238,7 @@ async function init(): Promise<void> {
     waitForMessages();
 
     watchTheme(broadcastTheme);
+    watchNavigation(handleNavigation);
 
     browserAPI.storage.onChanged.addListener(handleStorageChange);
     browserAPI.runtime.onMessage.addListener(handleMessage);

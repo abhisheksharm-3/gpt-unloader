@@ -334,3 +334,32 @@ export function setEnabled(enabled: boolean): void {
 export function getEnabled(): boolean {
     return currentEnabled;
 }
+
+/**
+ * Disconnects all observers, clears all intervals and maps.
+ * Call before re-initializing for a new conversation.
+ */
+export function teardownObservers(): void {
+    intersectionObserver?.disconnect();
+    intersectionObserver = null;
+
+    placeholderObserver?.disconnect();
+    placeholderObserver = null;
+
+    mutationObserver?.disconnect();
+    mutationObserver = null;
+
+    placeholderToElement.clear();
+
+    if (gcInterval) {
+        clearInterval(gcInterval);
+        gcInterval = null;
+    }
+
+    if (batchCollapseInterval) {
+        clearInterval(batchCollapseInterval);
+        batchCollapseInterval = null;
+    }
+
+    isProcessing = false;
+}
