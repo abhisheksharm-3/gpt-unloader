@@ -1,5 +1,4 @@
-import { MESSAGE_SELECTOR } from '../../shared/constants';
-import { getMessageState } from './message-tracker';
+import { getMessages } from './message-tracker';
 import { extractMessageContent } from './message-extractor';
 import type { SearchResultType } from '../../shared/types';
 
@@ -51,21 +50,18 @@ function highlightMatches(element: HTMLElement, query: string): number {
     return matchCount;
 }
 
-/**
- * Searches for a query in all messages
- */
+/** Searches all tracked messages including currently collapsed ones. */
 export function searchMessages(query: string): SearchResultType[] {
     clearSearchHighlights();
 
     if (!query.trim()) return [];
 
     const results: SearchResultType[] = [];
-    const messages = document.querySelectorAll(MESSAGE_SELECTOR);
+    const messages = getMessages();
+    let index = 0;
 
-    messages.forEach((msg, index) => {
-        const element = msg as HTMLElement;
-        const role = msg.getAttribute('data-message-author-role') ?? 'unknown';
-        const elementState = getMessageState(element);
+    messages.forEach((state, element) => {
+        const role = element.getAttribute('data-message-author-role') ?? 'unknown';
         const content = extractMessageContent(element);
 
         const lowerContent = content.toLowerCase();
@@ -78,17 +74,14 @@ export function searchMessages(query: string): SearchResultType[] {
             const end = Math.min(content.length, matchIndex + query.length + 30);
             const preview = (start > 0 ? '...' : '') + content.substring(start, end) + (end < content.length ? '...' : '');
 
-            results.push({
-                messageIndex: index,
-                role,
-                matchCount,
-                preview: preview.trim(),
-            });
+            results.push({ messageIndex: index, role, matchCount, preview: preview.trim() });
 
-            if (!elementState?.isCollapsed) {
+            // Only highlight in-DOM elements; collapsed elements are detached
+            if (!state.isCollapsed) {
                 highlightMatches(element, query);
             }
         }
+        index++;
     });
 
     return results;
@@ -98,14 +91,21 @@ export function searchMessages(query: string): SearchResultType[] {
  * Scrolls to a specific message by index
  */
 export function scrollToMessage(index: number): void {
-    const messages = document.querySelectorAll(MESSAGE_SELECTOR);
-    const message = messages[index] as HTMLElement;
+    const messages = getMessages();
+    const entries = Array.from(messages.entries());
+    const entry = entries[index];
+    if (!entry) return;
 
-    if (message) {
-        message.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        message.style.outline = '2px solid #10b981';
+    const [element, state] = entry;
+
+    // If collapsed, restore first so the element is in the DOM
+    if (state.isCollapsed) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.style.outline = '2px solid #10b981';
         setTimeout(() => {
-            message.style.outline = '';
+            element.style.outline = '';
         }, 2000);
     }
 }

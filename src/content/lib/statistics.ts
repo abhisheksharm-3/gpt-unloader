@@ -1,26 +1,18 @@
-import { MESSAGE_SELECTOR } from '../../shared/constants';
+import { getMessages } from './message-tracker';
 import { extractMessageContent } from './message-extractor';
 import type { ConversationStatsType } from '../../shared/types';
 
-/**
- * Counts words in a string
- */
 function countWords(text: string): number {
     return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-/**
- * Estimates token count (rough approximation: ~4 chars per token)
- */
 function estimateTokens(text: string): number {
     return Math.ceil(text.length / 4);
 }
 
-/**
- * Gets comprehensive conversation statistics
- */
+/** Returns stats for all tracked messages, including currently collapsed ones. */
 export function getConversationStats(): ConversationStatsType {
-    const messages = document.querySelectorAll(MESSAGE_SELECTOR);
+    const messages = getMessages();
 
     let userMessages = 0;
     let assistantMessages = 0;
@@ -28,9 +20,8 @@ export function getConversationStats(): ConversationStatsType {
     let assistantWords = 0;
     let totalText = '';
 
-    messages.forEach((msg) => {
-        const element = msg as HTMLElement;
-        const role = msg.getAttribute('data-message-author-role');
+    messages.forEach((_, element) => {
+        const role = element.getAttribute('data-message-author-role');
         const content = extractMessageContent(element);
 
         totalText += content + ' ';
@@ -46,7 +37,7 @@ export function getConversationStats(): ConversationStatsType {
     });
 
     return {
-        totalMessages: messages.length,
+        totalMessages: messages.size,
         userMessages,
         assistantMessages,
         totalWords: userWords + assistantWords,

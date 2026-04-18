@@ -21,10 +21,23 @@ function getConversationId(): string {
 }
 
 /**
- * Gets the scroll container
+ * Returns the element that is actually scrolling in ChatGPT.
+ * ChatGPT's scroll container is a child div of main, not main itself.
  */
 function getScrollContainer(): HTMLElement | null {
-    return document.querySelector('main') as HTMLElement;
+    const main = document.querySelector('main');
+    if (!main) return null;
+
+    // Walk descendants (breadth-first, shallow) to find the scrolling element
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode();
+    while (node) {
+        const el = node as HTMLElement;
+        if (el.scrollHeight > el.clientHeight + 50) return el;
+        node = walker.nextNode();
+    }
+
+    return main;
 }
 
 /**

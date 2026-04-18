@@ -113,13 +113,23 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 /**
- * Finds the toolbar container for a message
+ * Finds the action toolbar for a message turn.
+ * Uses the copy button's stable data-testid as anchor since Tailwind class names are unstable.
  */
 function findToolbar(messageElement: HTMLElement): HTMLElement | null {
     const turnContainer = messageElement.closest('[data-testid^="conversation-turn"]');
     if (!turnContainer) return null;
-    const toolbar = turnContainer.querySelector('.flex.flex-wrap.items-center');
-    return toolbar as HTMLElement | null;
+
+    const copyBtn = turnContainer.querySelector('[data-testid="copy-turn-action-button"]');
+    if (copyBtn?.parentElement) return copyBtn.parentElement as HTMLElement;
+
+    // Fallback: find any div that contains multiple buttons
+    const divs = turnContainer.querySelectorAll('div');
+    for (const div of Array.from(divs)) {
+        if (div.querySelectorAll('button').length >= 2) return div as HTMLElement;
+    }
+
+    return null;
 }
 
 /**
