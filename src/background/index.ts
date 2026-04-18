@@ -154,6 +154,17 @@ browserAPI.tabs.onRemoved.addListener((tabId) => {
     tabRegistry.delete(tabId);
 });
 
+browserAPI.runtime.onInstalled.addListener(() => {
+    createContextMenus();
+    browserAPI.tabs.query({ url: ['*://chatgpt.com/*', '*://chat.openai.com/*'] }).then((tabs) => {
+        tabs.forEach((tab) => {
+            if (tab.id) {
+                browserAPI.tabs.sendMessage(tab.id, { type: 'reinitialize' }).catch(() => {});
+            }
+        });
+    });
+});
+
 // Check preferences for context menu
 browserAPI.storage.local.get(['preferences']).then((result) => {
     const prefs = result.preferences as UserPreferencesType | undefined;
