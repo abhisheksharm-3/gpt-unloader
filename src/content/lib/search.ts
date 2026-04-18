@@ -65,8 +65,8 @@ export function searchMessages(query: string): SearchResultType[] {
     messages.forEach((msg, index) => {
         const element = msg as HTMLElement;
         const role = msg.getAttribute('data-message-author-role') ?? 'unknown';
-        const state = getMessageState(element);
-        const content = extractMessageContent(element, state);
+        const elementState = getMessageState(element);
+        const content = extractMessageContent(element);
 
         const lowerContent = content.toLowerCase();
         const lowerQuery = query.toLowerCase();
@@ -85,7 +85,7 @@ export function searchMessages(query: string): SearchResultType[] {
                 preview: preview.trim(),
             });
 
-            if (!state?.isCollapsed) {
+            if (!elementState?.isCollapsed) {
                 highlightMatches(element, query);
             }
         }

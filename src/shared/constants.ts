@@ -14,8 +14,8 @@ export const DEFAULT_SETTINGS = {
     BUFFER_SIZE: 3,
 };
 
-/** Multiplier for calculating IntersectionObserver rootMargin */
-export const ROOT_MARGIN_MULTIPLIER = 400;
+/** Multiplier for calculating IntersectionObserver rootMargin (lower = more aggressive collapsing) */
+export const ROOT_MARGIN_MULTIPLIER = 250;
 
 /** Stats polling interval in milliseconds */
 export const STATS_POLL_INTERVAL_MS = 2000;

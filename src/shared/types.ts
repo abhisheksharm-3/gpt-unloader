@@ -21,10 +21,8 @@ export type ConversationMessageType = {
 /** State tracking for a virtualized message element */
 export type MessageStateType = {
     element: HTMLElement;
-    originalHTML: string;
     originalHeight: number;
     isCollapsed: boolean;
-    isCompressed?: boolean; // Whether originalHTML is LZ-String compressed
 };
 
 /** Extension settings stored in browser.storage */

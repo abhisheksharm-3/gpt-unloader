@@ -6,6 +6,8 @@ import { setStatus } from './status-indicator';
 const CHUNK_SIZE = 20;
 const CHUNK_DELAY_MS = 0;
 const GC_TRIGGER_INTERVAL_MS = 30000; // Trigger GC hint every 30 seconds
+const BATCH_COLLAPSE_INTERVAL_MS = 30000; // Check for distant messages every 30 seconds
+const DISTANT_THRESHOLD_VIEWPORTS = 5; // Collapse messages > 5 viewports away
 
 let intersectionObserver: IntersectionObserver | null = null;
 let mutationObserver: MutationObserver | null = null;
@@ -14,6 +16,7 @@ let currentEnabled = true;
 let onStatsChange: (() => void) | null = null;
 let isProcessing = false;
 let gcInterval: ReturnType<typeof setInterval> | null = null;
+let batchCollapseInterval: ReturnType<typeof setInterval> | null = null;
 
 // Map placeholders back to their original elements
 const placeholderToElement = new Map<HTMLElement, HTMLElement>();
@@ -38,25 +41,15 @@ function createIntersectionCallback(): IntersectionObserverCallback {
             if (!state) return;
 
             if (!entry.isIntersecting && !state.isCollapsed) {
-                // Element is leaving viewport - collapse it
-                collapseMessage(element, state);
-
-                // Find the placeholder that replaced this element and observe it
-                const placeholder = document.querySelector(
-                    `.gpt-unloader-placeholder[data-gpt-unloader-original-id="${element.dataset.messageId || ''}"]`
-                ) as HTMLElement;
-
+                const placeholder = collapseMessage(element, state);
                 if (placeholder && placeholderObserver) {
                     placeholderToElement.set(placeholder, element);
                     placeholderObserver.observe(placeholder);
                 }
-
-                // Unobserve the original element since it's detached
                 intersectionObserver?.unobserve(element);
+                onStatsChange?.();
             }
         });
-
-        onStatsChange?.();
     };
 }
 
@@ -77,22 +70,48 @@ function createPlaceholderCallback(): IntersectionObserverCallback {
             if (!state) return;
 
             if (entry.isIntersecting && state.isCollapsed) {
-                // Placeholder is entering viewport - restore the element
                 restoreMessage(originalElement, state);
-
-                // Stop observing placeholder
                 placeholderObserver?.unobserve(placeholder);
                 placeholderToElement.delete(placeholder);
-
-                // Start observing the restored element again
                 if (intersectionObserver) {
                     intersectionObserver.observe(originalElement);
                 }
+                onStatsChange?.();
             }
         });
-
-        onStatsChange?.();
     };
+}
+
+/**
+ * Batch collapse messages that are very far from the viewport
+ * This catches messages that might have been missed or loaded later
+ */
+function batchCollapseDistantMessages(): void {
+    if (!currentEnabled) return;
+
+    const viewportHeight = window.innerHeight;
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const viewportCenter = scrollTop + viewportHeight / 2;
+    const messages = getMessages();
+
+    messages.forEach((state, element) => {
+        if (state.isCollapsed) return;
+
+        const rect = element.getBoundingClientRect();
+        const elementTop = scrollTop + rect.top;
+        const distanceFromCenter = Math.abs(elementTop - viewportCenter);
+
+        if (distanceFromCenter > viewportHeight * DISTANT_THRESHOLD_VIEWPORTS) {
+            const placeholder = collapseMessage(element, state);
+            if (placeholder && placeholderObserver) {
+                placeholderToElement.set(placeholder, element);
+                placeholderObserver.observe(placeholder);
+            }
+            intersectionObserver?.unobserve(element);
+        }
+    });
+
+    onStatsChange?.();
 }
 
 /**
@@ -206,6 +225,11 @@ export function setupObservers(bufferSize: number): void {
     gcInterval = setInterval(() => {
         triggerGCHint();
     }, GC_TRIGGER_INTERVAL_MS);
+
+    // Start periodic batch collapse for distant messages
+    batchCollapseInterval = setInterval(() => {
+        batchCollapseDistantMessages();
+    }, BATCH_COLLAPSE_INTERVAL_MS);
 }
 
 /**
@@ -281,13 +305,26 @@ export function scanMessages(): void {
 export function setEnabled(enabled: boolean): void {
     currentEnabled = enabled;
 
-    if (!enabled && gcInterval) {
-        clearInterval(gcInterval);
-        gcInterval = null;
-    } else if (enabled && !gcInterval) {
-        gcInterval = setInterval(() => {
-            triggerGCHint();
-        }, GC_TRIGGER_INTERVAL_MS);
+    if (!enabled) {
+        if (gcInterval) {
+            clearInterval(gcInterval);
+            gcInterval = null;
+        }
+        if (batchCollapseInterval) {
+            clearInterval(batchCollapseInterval);
+            batchCollapseInterval = null;
+        }
+    } else {
+        if (!gcInterval) {
+            gcInterval = setInterval(() => {
+                triggerGCHint();
+            }, GC_TRIGGER_INTERVAL_MS);
+        }
+        if (!batchCollapseInterval) {
+            batchCollapseInterval = setInterval(() => {
+                batchCollapseDistantMessages();
+            }, BATCH_COLLAPSE_INTERVAL_MS);
+        }
     }
 }
 

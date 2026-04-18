@@ -17,10 +17,8 @@ export function getMessages(): Map<HTMLElement, MessageStateType> {
 export function trackMessage(element: HTMLElement): void {
     const state: MessageStateType = {
         element,
-        originalHTML: '',
         originalHeight: 0,
         isCollapsed: false,
-        isCompressed: false,
     };
     messages.set(element, state);
 }

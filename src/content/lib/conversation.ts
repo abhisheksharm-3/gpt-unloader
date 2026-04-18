@@ -1,5 +1,4 @@
 import { MESSAGE_SELECTOR, MAX_INJECTION_RETRIES, INJECTION_RETRY_DELAY_MS } from '../../shared/constants';
-import { getMessageState } from './message-tracker';
 import { extractMessageContent } from './message-extractor';
 import type { ExtractedMessageType } from '../../shared/types';
 import { showToast } from './toast';
@@ -47,8 +46,7 @@ export function extractConversation(): ExtractedMessageType[] {
     msgs.forEach((msg) => {
         const element = msg as HTMLElement;
         const role = msg.getAttribute('data-message-author-role') ?? 'unknown';
-        const state = getMessageState(element);
-        const content = extractMessageContent(element, state);
+        const content = extractMessageContent(element);
 
         conversation.push({
             role,
