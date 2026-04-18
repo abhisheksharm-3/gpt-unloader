@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        run: npx tsc -p tsconfig.app.json --noEmit
+
       - name: Lint
         run: npm run lint
 
@@ -35,39 +38,23 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Create Chrome zip
+      - name: Create zip
         run: |
           cd dist
-          zip -r ../gpt-unloader-${{ steps.get_version.outputs.VERSION }}-chrome.zip .
-
-      - name: Create Firefox zip
-        run: |
-          cd dist
-          zip -r ../gpt-unloader-${{ steps.get_version.outputs.VERSION }}-firefox.zip .
+          zip -r ../gpt-unloader-${{ steps.get_version.outputs.VERSION }}.zip .
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: GPT Unloader ${{ steps.get_version.outputs.VERSION }}
+          generate_release_notes: true
           body: |
-            ## GPT Unloader ${{ steps.get_version.outputs.VERSION }}
-            
-            ### Installation
-            
-            **Chrome:**
-            1. Download `gpt-unloader-${{ steps.get_version.outputs.VERSION }}-chrome.zip`
-            2. Extract the zip file
-            3. Go to `chrome://extensions`
-            4. Enable "Developer mode"
-            5. Click "Load unpacked" and select the extracted folder
-            
-            **Firefox:**
-            1. Download `gpt-unloader-${{ steps.get_version.outputs.VERSION }}-firefox.zip`
-            2. Go to `about:debugging`
-            3. Click "This Firefox" → "Load Temporary Add-on"
-            4. Select `manifest.json` from the extracted folder
-          files: |
-            gpt-unloader-${{ steps.get_version.outputs.VERSION }}-chrome.zip
-            gpt-unloader-${{ steps.get_version.outputs.VERSION }}-firefox.zip
+            ## Installation
+
+            1. Download `gpt-unloader-${{ steps.get_version.outputs.VERSION }}.zip`
+            2. Extract the zip
+            3. Go to `chrome://extensions`, enable **Developer mode**
+            4. Click **Load unpacked** and select the extracted folder
+          files: gpt-unloader-${{ steps.get_version.outputs.VERSION }}.zip
           draft: false
           prerelease: false
